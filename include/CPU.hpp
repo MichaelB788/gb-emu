@@ -43,7 +43,6 @@ private: // Register lookups
 
   const std::array<uint16_t *, 4> r16{&BC.word, &DE.word, &HL.word, &SP};
 
-private: // Flags
 private: // Lookup and decoding
   [[nodiscard]] auto cond(uint8_t y) const -> bool;
 

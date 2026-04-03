@@ -6,7 +6,7 @@ add_library(GameBoySource
   Cartridge.cpp
   CPU.cpp
   CPU_Instructions.cpp
-  CPU_InstructionDispatching.cpp
+  CPU_Dispatching.cpp
   GameBoy.cpp
   PlatformSDL.cpp
 )

@@ -38,13 +38,13 @@ auto CPU::impl_add_n16(const uint16_t n16) -> uint16_t {
 }
 
 auto CPU::impl_add_sp_e8() -> uint16_t {
-  const auto imm8 = fetch_byte();
-  const auto result = SP + static_cast<int8_t>(imm8);
+  const auto e8 = static_cast<int8_t>(fetch_byte());
+  const auto result = static_cast<uint16_t>(SP + e8);
 
   F.set(Flags::Z, false);
   F.set(Flags::N, false);
-  F.set(Flags::H, (SP & 0xF) + (imm8 & 0xF) > 0xF);
-  F.set(Flags::C, (SP & 0xFF) + imm8 > 0xFF);
+  F.set(Flags::H, (SP & 0xF) + (e8 & 0xF) > 0xF);
+  F.set(Flags::C, (SP & 0xFF) + e8 > 0xFF);
 
   return result;
 }
@@ -64,14 +64,14 @@ auto CPU::impl_inc_n8(const uint8_t n8) -> uint8_t {
 
   F.set(Flags::Z, result == 0);
   F.set(Flags::N, false);
-  F.set(Flags::H, (n8 & 0xF) + 1 > 0xF);
+  F.set(Flags::H, (n8 & 0xF) == 0xF);
 
   return result;
 }
 
 auto CPU::impl_sbc_n8(const uint8_t n8) -> uint8_t {
   const auto carry = F.get(Flags::C);
-  const uint8_t result = A - (n8 + carry);
+  const uint8_t result = A - n8 - carry;
 
   F.set(Flags::Z, result == 0);
   F.set(Flags::N, true);
@@ -153,18 +153,18 @@ auto CPU::impl_rr_n8(const uint8_t n8, const Prefix prefix) -> uint8_t {
   F.set(Flags::Z, result == 0 && prefix == Prefix::CB);
   F.set(Flags::N, false);
   F.set(Flags::H, false);
-  F.set(Flags::C, bit::get(n8, 0));
+  F.set(Flags::C, (n8 & 1));
 
   return result;
 }
 
 auto CPU::impl_rrc_n8(const uint8_t n8, const Prefix prefix) -> uint8_t {
-  const uint8_t result = n8 >> 1 | (bit::get(n8, 0)) << 7;
+  const uint8_t result = n8 >> 1 | (n8 & 1) << 7;
 
   F.set(Flags::Z, result == 0 && prefix == Prefix::CB);
   F.set(Flags::N, false);
   F.set(Flags::H, false);
-  F.set(Flags::C, bit::get(n8, 0));
+  F.set(Flags::C, (n8 & 1));
 
   return result;
 }
@@ -181,12 +181,12 @@ auto CPU::impl_sla_n8(const uint8_t n8) -> uint8_t {
 }
 
 auto CPU::impl_sra_n8(const uint8_t n8) -> uint8_t {
-  const uint8_t result = n8 >> 1 | (bit::get(n8, 7) << 7);
+  const uint8_t result = n8 >> 1 | n8 & 0x80;
 
   F.set(Flags::Z, result == 0);
   F.set(Flags::N, false);
   F.set(Flags::H, false);
-  F.set(Flags::C, bit::get(n8, 0));
+  F.set(Flags::C, (n8 & 1));
 
   return result;
 }
@@ -197,7 +197,7 @@ auto CPU::impl_srl_n8(const uint8_t n8) -> uint8_t {
   F.set(Flags::Z, result == 0);
   F.set(Flags::N, false);
   F.set(Flags::H, false);
-  F.set(Flags::C, bit::get(n8, 0));
+  F.set(Flags::C, (n8 & 1));
 
   return result;
 }
