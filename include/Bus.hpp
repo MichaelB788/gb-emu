@@ -17,31 +17,6 @@ public:
   void write(uint16_t addr, uint8_t val);
 
 private:
-  [[nodiscard]] uint8_t read_wram_bank_0(const uint16_t addr) const {
-    return wram_[addr - WRAM_BANK_0_ADDR];
-  }
-
-  void write_wram_bank_0(const uint16_t addr, const uint8_t val) {
-    wram_[addr - WRAM_BANK_0_ADDR] = val;
-  }
-
-  [[nodiscard]] uint8_t read_echo_ram(const uint16_t addr) const {
-    return wram_[addr - ECHO_RAM_ADDR];
-  }
-
-  void write_echo_ram(const uint16_t addr, const uint8_t val) {
-    wram_[addr - ECHO_RAM_ADDR] = val;
-  }
-
-  [[nodiscard]] uint8_t read_hram(const uint16_t addr) const {
-    return hram_[addr - HRAM_ADDR];
-  }
-
-  void write_hram(const uint16_t addr, const uint8_t val) {
-    hram_[addr - HRAM_ADDR] = val;
-  }
-
-private:
   Cartridge &cart_;
 
   PPU ppu_;
