@@ -215,6 +215,12 @@ auto CPU::impl_swap_n8(const uint8_t n8) -> uint8_t {
   return result;
 }
 
+void CPU::impl_bit_n8(const uint8_t bit_idx, const uint8_t n8) {
+  F.set(Flags::Z, !bit::get(n8, bit_idx));
+  F.set(Flags::N, false);
+  F.set(Flags::H, true);
+}
+
 void CPU::cpl() {
   A = static_cast<uint8_t>(~A);
   F.set(Flags::N, true);
@@ -223,19 +229,19 @@ void CPU::cpl() {
 
 void CPU::res_mem_hl() {
   auto hl_ind = read_hl();
-  bit::set(hl_ind, opcode.y(), false);
+  bit::set(hl_ind, IR.y(), false);
   write_hl(hl_ind);
 }
 
 void CPU::set_mem_hl() {
   auto hl_ind = read_hl();
-  bit::set(hl_ind, opcode.y(), true);
+  bit::set(hl_ind, IR.y(), true);
   write_hl(hl_ind);
 }
 
 void CPU::jp_cc_a16() {
   const auto addr = fetch_word();
-  if (cond(opcode.y())) {
+  if (cond(IR.y())) {
     PC = addr;
     extra_cycles = 4;
   }
@@ -243,7 +249,7 @@ void CPU::jp_cc_a16() {
 
 void CPU::jr_cc_e8() {
   const auto addr = PC + static_cast<int8_t>(fetch_byte());
-  if (cond(opcode.y())) {
+  if (cond(IR.y())) {
     PC = static_cast<uint16_t>(addr);
     extra_cycles = 4;
   }
@@ -257,7 +263,7 @@ void CPU::call_a16() {
 
 void CPU::call_cc_a16() {
   const auto addr = fetch_word();
-  if (cond(opcode.y())) {
+  if (cond(IR.y())) {
     SP -= 2;
     write_word(SP, PC);
     PC = addr;
@@ -267,27 +273,31 @@ void CPU::call_cc_a16() {
 
 void CPU::ret_cc() {
   const auto addr = read_word(SP);
-  if (cond(opcode.y())) {
+  if (cond(IR.y())) {
     PC = addr;
     SP += 2;
     extra_cycles = 12;
   }
 }
+
 void CPU::reti() {
   PC = read_word(SP);
   SP += 2;
   IME = true;
 }
+
 void CPU::rst_vec() {
   SP -= 2;
   write_word(SP, PC);
-  PC = static_cast<uint16_t>(opcode.y()) * 8;
+  PC = static_cast<uint16_t>(IR.y()) * 8;
 }
+
 void CPU::ccf() {
   F.set(Flags::Z, false);
   F.set(Flags::H, false);
   F.set(Flags::C, !F.get(Flags::C));
 }
+
 void CPU::scf() {
   F.set(Flags::Z, false);
   F.set(Flags::H, false);
@@ -328,8 +338,8 @@ void CPU::daa() {
 }
 
 void CPU::prefix() {
-  const auto cb_ins = cb_optable[fetch_byte()];
-  opcode = cb_ins.opcode;
+  IR = Opcode(fetch_byte());
+  const auto cb_ins = cb_optable[IR.val];
 
   (this->*cb_ins.exec)();
 
@@ -340,6 +350,6 @@ void CPU::prefix() {
 
 void CPU::illegal() {
   std::cerr << "Illegal opcode encountered: 0x" << std::hex
-            << static_cast<int>(opcode.val) << "\n";
+            << static_cast<int>(IR.val) << "\n";
   state = State::Stopped;
 }

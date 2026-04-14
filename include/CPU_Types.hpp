@@ -25,10 +25,9 @@ struct Opcode {
 };
 
 struct Instruction {
-  Opcode opcode;
-  void (CPU::*exec)();
   const char *name;
   uint8_t cycles;
+  void (CPU::*exec)();
 };
 
 /// `union` to represent CPU register pairs for easy 8-bit and 16-bit register

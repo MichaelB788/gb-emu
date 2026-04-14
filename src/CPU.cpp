@@ -8,8 +8,8 @@ CPU::CPU(Bus &bus) : bus(bus) {}
 auto CPU::step() -> uint8_t {
   extra_cycles = 0;
 
-  const auto ins = optable[fetch_byte()];
-  opcode = ins.opcode;
+  IR = Opcode(fetch_byte());
+  const auto ins = optable[IR.val];
 
   (this->*ins.exec)();
 
@@ -20,18 +20,7 @@ auto CPU::step() -> uint8_t {
   return ins.cycles + extra_cycles;
 }
 
-auto CPU::read_word(const uint16_t addr) const -> uint16_t {
-  const auto lo = bus.read(addr);
-  const auto hi = bus.read(addr + 1);
-  return static_cast<uint16_t>(hi << 8 | lo);
-}
-
-void CPU::write_word(const uint16_t address, const uint16_t value) {
-  bus.write(address, static_cast<uint8_t>(value & 0xFF));
-  bus.write(address + 1, static_cast<uint8_t>(value >> 8));
-}
-
-void CPU::log_ins(const Instruction &ins) const {
+void CPU::log_ins(const Instruction &ins) {
   static FILE *output_file = nullptr;
   if (!output_file)
     output_file = fopen("cpu_trace.txt", "w");
@@ -40,12 +29,16 @@ void CPU::log_ins(const Instruction &ins) const {
     return;
   }
 
-  fprintf(output_file,
-          "[0x%02X]: A:%02X F:%02X BC:%04X DE:%04X HL:%04X "
-          "PC:%04X SP:%04X %s\n",
-          ins.opcode.val, A, F.byte, BC.word, DE.word, HL.word, PC, SP,
-          ins.name);
-  fflush(output_file);
+  static constexpr int MAX_ENTRIES = 10;
+  if (num_entries < MAX_ENTRIES) {
+    fprintf(output_file,
+            "[0x%02X]: A:%02X F:%02X BC:%04X DE:%04X HL:%04X "
+            "PC:%04X SP:%04X n16:%04X %s\n",
+            IR.val, A, F.byte, BC.word, DE.word, HL.word, PC, SP, read_word(PC),
+            ins.name);
+    fflush(output_file);
+    ++num_entries;
+  }
 }
 
 #if defined(__clang__) || defined(__GNUC__)
