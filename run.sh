@@ -1,37 +1,37 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-set -euo pipefail
+set -e
 
-run() {
-  if ! command -v cmake >/dev/null; then
-    echo "Could not find cmake binary. Please install it via your package manager."
-    exit 1
-  elif ! command -v ninja >/dev/null; then
-    echo "Could not find ninja binary. Please install it via your package manager."
-    exit 1
-  fi
+PROJECT_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+BUILD_DIR="${PROJECT_ROOT}/build"
+BUILD_TYPE="${BUILD_TYPE:-Debug}"
 
-  local project_root
-  project_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-  local build_dir="${project_root}/build"
+clean=false
+extra_args=()
+for arg in "$@"; do
+  case "$arg" in
+  --clean) clean=true ;;
+  --) ;;
+  *) extra_args+=("$arg") ;;
+  esac
+done
 
-  local cmake_opts=(
-    "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
-    "-DCMAKE_BUILD_TYPE=Debug"
-  )
+if [[ $clean ]]; then
+  rm -rf "$BUILD_DIR"
+fi
 
-  cmake -S "${project_root}" -B "${build_dir}" "${cmake_opts[@]}" -G Ninja
-  ninja -C "${build_dir}"
+cmake -S "$PROJECT_ROOT" -B "$BUILD_DIR" \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+  -G Ninja
+ninja -C "$BUILD_DIR"
 
-  local exe="${build_dir}/bin/GameBoy"
-  local rom="${project_root}/extern/gb-test-roms/cpu_instrs/cpu_instrs.gb"
+exe="${BUILD_DIR}/bin/GameBoy"
+rom="${PROJECT_ROOT}/extern/gb-test-roms/cpu_instrs/cpu_instrs.gb"
 
-  if ! [ -f "$rom" ]; then
-    echo "ROM not found: $rom"
-    exit 1
-  fi
-
-  "$exe" "$rom"
+[[ -x "$exe" ]] || {
+  echo "Could not find exe" >&2
+  exit 1
 }
 
-run
+"$exe" "$rom"
